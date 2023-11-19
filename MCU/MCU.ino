@@ -49,7 +49,7 @@ void setup() {
  }
  deviceID = deviceID.c_str();
  pinMode(D1, INPUT);
- pinMode(D8, INPUT);
+ pinMode(D2, INPUT);
  pinMode(D7, INPUT);
  delay(2000);
  if(digitalRead(D1) == HIGH){
