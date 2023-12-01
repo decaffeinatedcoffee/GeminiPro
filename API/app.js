@@ -98,6 +98,9 @@ const userSchema = mongoose.Schema({
           }
         },
         timer:{
+          timezone:{
+            type:String
+          },
           on:{
             type:String
           },
@@ -139,7 +142,7 @@ let pass = req.body.pass;
 bcrypt.hash(pass, 10, function(err, hash) {
   if(err){
   res.send({"error":true, "message":"Error while generating password hash."});
-  return;
+  return; 
   }else{
 username = CryptoJS.AES.encrypt(username, process.env.SALT).toString();
 var u = new User({username:username, email:email, password:hash, id: uuid.v4(), createdAt:new Date().getTime(), devices:{myDevices:[], sharedDevices:[]}});
@@ -246,7 +249,7 @@ app.post("/api/v1/newdevice", function(req,res){
       if(user){
       
        if(user.loggedDevices.includes(token)){
-        var device = new Device({id:deviceID, name:deviceName, connectionStatus:"Online", status:{gpioStatus:0, lightAlarm:0, lightAlarmTime: null, ledColors:{current:"0xFF0000",on:"0x0000FF",off:"0xFF0000"}, timer:{on:null, off:null}}, lastAction:new Date().getTime(), sincricPro:{appKey:null, appSecret:null, switchID: null}});
+        var device = new Device({id:deviceID, name:deviceName, connectionStatus:"Online", status:{gpioStatus:0, lightAlarm:0, lightAlarmTime: null, ledColors:{current:"0xFF0000",on:"0x0000FF",off:"0xFF0000"}, timer:{timezone: "-03:00", on:null, off:null}}, lastAction:new Date().getTime(), sincricPro:{appKey:null, appSecret:null, switchID: null}});
         device.save()
         user.devices.myDevices.push(deviceID);
         user.save();
@@ -391,6 +394,7 @@ async function checkTimers(){
 app.post("/api/v1/changedevicesettings", function(req,res){
   let timerOn = req.body.timerOn;
   let timerOff = req.body.timerOff;
+  let timezone = req.body.timezone;
   let colorOn = req.body.colorOn;
   let colorOff = req.body.colorOff;
   let GAkey = req.body.GAkey;
@@ -422,6 +426,7 @@ app.post("/api/v1/changedevicesettings", function(req,res){
           device.status.ledColors.off = colorOff;
           device.status.timer.on = timerOn;
           device.status.timer.off = timerOff;
+          device.status.timer.timezone = timezone;
           device.status.ledColors.off = colorOff;
           device.status.lightAlarm = lightAlarm;
           if(device.status.gpioStatus == 0){
