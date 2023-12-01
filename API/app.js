@@ -99,7 +99,7 @@ const userSchema = mongoose.Schema({
         },
         timer:{
           timezone:{
-            type:String
+            type:Number
           },
           on:{
             type:String
@@ -407,12 +407,12 @@ app.post("/api/v1/changedevicesettings", function(req,res){
  
   
   if(timerOn){
-  timerOn = convertTimestamp(timerOn);
+  timerOn = convertTimestamp(timerOn,timezone);
   }else{
     timerOn = null;
   }
   if(timerOff){
-    timerOff = convertTimestamp(timerOff);
+    timerOff = convertTimestamp(timerOff, timezone);
     }else{
       timerOff = null;
     }
@@ -658,11 +658,17 @@ app.listen(process.env.PORT || 3000 || 3001, () => {
 })
 
 
-function convertTimestamp(time){
-  let ts = new Date(`${new Date().getMonth()+1} ${new Date().getDate()} ${new Date().getFullYear()} ${time}`).getTime();
-  if(ts < new Date().getTime()){
-    return ts + (24 * 60 * 60 * 1000);
+
+function convertTimestamp(time, timezone){
+  let ts = new Date(`${new Date().getMonth()+1} ${new Date().getDate()} ${new Date().getFullYear()} ${time}`);
+  var tztime = timezone * 60 + ts.getTimezoneOffset();
+  var ttz = new Date(ts.getTime() + tztime * 60 * 1000).getTime();
+  console.log(ttz)
+  if(ttz < new Date().getTime()){
+    return ttz + (24 * 60 * 60 * 1000);
     }else{
-    return ts;
+    return ttz;
     }
 }
+
+
