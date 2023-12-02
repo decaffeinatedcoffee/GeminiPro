@@ -658,15 +658,18 @@ app.listen(process.env.PORT || 3000 || 3001, () => {
 })
 
 
-
-
 function convertTimestamp(time, timezone){
   let ts = new Date(`${new Date().getMonth()+1} ${new Date().getDate()} ${new Date().getFullYear()} ${time}`).getTime() / 1000;
-  console.log(`ts ${ts}`);
+  timezone = parseFloat(timezone);
+  if(timezone < 0){
+    timezone = Math.abs(timezone);
+  }else if(timezone > 0){
+    timezone = -Math.abs(timezone);
+  }else{
+    timezone = 0;
+  }
   let timezoneOffset = 3600 * timezone;
-  console.log(`offset ${timezoneOffset}`);
   let ttz = new Date(Math.round(ts + timezoneOffset) * 1000).getTime();
-  console.log(`ttz ${ttz}`);
   if(ttz < new Date().getTime()){
     return ttz + (24 * 60 * 60 * 1000);
     }else{
