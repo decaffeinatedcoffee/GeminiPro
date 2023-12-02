@@ -661,7 +661,7 @@ app.listen(process.env.PORT || 3000 || 3001, () => {
 
 
 function convertTimestamp(time, timezone){
-  let ts = new Date(`${new Date().getMonth()+1} ${new Date().getDate()} ${new Date().getFullYear()} ${time}`).getTime();
+  let ts = new Date(`${new Date().getMonth()+1} ${new Date().getDate()} ${new Date().getFullYear()} ${time}`).getTime() / 1000;
   console.log(`ts ${ts}`);
   let timezoneOffset = 3600 * timezone;
   console.log(`offset ${timezoneOffset}`);
