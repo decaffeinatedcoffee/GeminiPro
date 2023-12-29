@@ -249,7 +249,7 @@ app.post("/api/v1/newdevice", function(req,res){
       if(user){
       
        if(user.loggedDevices.includes(token)){
-        var device = new Device({id:deviceID, name:deviceName, connectionStatus:"Online", status:{gpioStatus:0, lightAlarm:0, lightAlarmTime: null, ledColors:{current:"0xFF0000",on:"0x0000FF",off:"0xFF0000"}, timer:{timezone: "-03:00", on:null, off:null}}, lastAction:new Date().getTime(), sincricPro:{appKey:null, appSecret:null, switchID: null}});
+        var device = new Device({id:deviceID, name:deviceName, connectionStatus:"Online", status:{gpioStatus:0, lightAlarm:0, lightAlarmTime: null, ledColors:{current:"0xFF0000",on:"0x0000FF",off:"0xFF0000"}, timer:{timezone: 0, on:null, off:null}}, lastAction:new Date().getTime(), sincricPro:{appKey:null, appSecret:null, switchID: null}});
         device.save()
         user.devices.myDevices.push(deviceID);
         user.save();
