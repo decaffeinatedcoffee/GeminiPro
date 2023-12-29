@@ -404,7 +404,8 @@ app.post("/api/v1/changedevicesettings", function(req,res){
   let id = req.body.id;
   let token = req.body.token;
   let deviceID = req.body.deviceID;
- 
+
+  console.log(`LA Info received: ${lightAlarm}`);
   
   if(timerOn){
   timerOn = convertTimestamp(timerOn,timezone);
