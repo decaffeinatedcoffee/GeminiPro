@@ -493,7 +493,7 @@ for(var i = 0; i < shared.length; i++){
       const notification = {
         contents: {
           'en': `Motion detected, the lights were turned on`,
-        },sincricPro
+        },
        include_player_ids: [shared[i].oneSignal[x]],
       };
       client.createNotification(notification);
