@@ -195,6 +195,9 @@ app.post("/api/v1/logincheck", function(req,res){
     for(var i = 0; i < user.devices.myDevices.length; i++){
       let device = await Device.findOne({id:user.devices.myDevices[i]});
      if(device){
+      device.sincricPro.appKey = CryptoJS.AES.decrypt(device.sincricPro.appKey, process.env.SALT).toString(CryptoJS.enc.Utf8);
+      device.sincricPro.appSecret = CryptoJS.AES.decrypt(device.sincricPro.appSecret, process.env.SALT).toString(CryptoJS.enc.Utf8);
+      device.sincricPro.switchID = CryptoJS.AES.decrypt(device.sincricPro.switchID, process.env.SALT).toString(CryptoJS.enc.Utf8);
       myDevices.push(device);
      }
     }
@@ -211,6 +214,7 @@ app.post("/api/v1/logincheck", function(req,res){
 
 
     res.send({valid:true, userData:userdata});
+    
    }else{
     res.send({valid:false});
    }
@@ -404,8 +408,7 @@ app.post("/api/v1/changedevicesettings", function(req,res){
   let id = req.body.id;
   let token = req.body.token;
   let deviceID = req.body.deviceID;
-
-  console.log(`LA Info received: ${lightAlarm}`);
+ 
   
   if(timerOn){
   timerOn = convertTimestamp(timerOn,timezone);
@@ -490,7 +493,7 @@ for(var i = 0; i < shared.length; i++){
       const notification = {
         contents: {
           'en': `Motion detected, the lights were turned on`,
-        },
+        },sincricPro
        include_player_ids: [shared[i].oneSignal[x]],
       };
       client.createNotification(notification);
