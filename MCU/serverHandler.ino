@@ -1,4 +1,5 @@
 
+
 void handleServerData(int gpioStatus, String ledColor, int lightAlarm, bool err){
   if(lightAlarm == 0 && lastPir == 1){
     lastPir = 0;
@@ -27,6 +28,7 @@ void handleServerData(int gpioStatus, String ledColor, int lightAlarm, bool err)
 
 void postServer(){
   if (WiFi.status() == WL_CONNECTED) { 
+    WiFiClientSecure client; 
     client.setInsecure(); 
     http.begin(client, "https://geminipro.cyclic.app/api/v1/device/motion?deviceid="+String(deviceID));      
     http.addHeader("Content-Type", "text/plain"); 
@@ -37,6 +39,7 @@ void postServer(){
 
  void fetch(){
   if (WiFi.status() == WL_CONNECTED) { 
+    WiFiClientSecure client; 
    client.setInsecure();  
   http.begin(client, "https://geminipro.cyclic.app/api/v1/device?id="+deviceID);  
   int httpCode = http.GET();                                 
@@ -62,6 +65,7 @@ void postServer(){
 
  void fetchtokens(){
   if (WiFi.status() == WL_CONNECTED) { 
+    WiFiClientSecure client; 
   client.setInsecure(); 
   http.begin(client, "https://geminipro.cyclic.app/api/v1/device/sinric/boot/getinfo?id="+deviceID);  
     int httpCode = http.GET();                               
@@ -79,9 +83,9 @@ void postServer(){
        String sinricKey = tokens["sinricKey"];
       String sinricSecret = tokens["sinricSecret"]; 
      String sinricID = tokens["sinricID"];
-     SinricProSwitch& mySwitch = SinricPro[sinricID];   
-     mySwitch.onPowerState(onPowerState);                
-     SinricPro.begin(sinricKey, sinricSecret);  
+     srkey = sinricKey;
+     srscrt = sinricSecret;
+     srID = sinricID;
       Serial.println("[SERVER] Got tokens from API");
      }else{
       Serial.println("[SERVER] Got no tokens from API");

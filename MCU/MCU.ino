@@ -10,7 +10,6 @@
 #include <EEPROM.h>
 
 HTTPClient http;
-WiFiClientSecure client; 
 IPAddress    apIP(10, 10, 10, 10); 
 ESP8266WebServer server(80);
 #define DATA_PIN    D3
@@ -19,7 +18,7 @@ ESP8266WebServer server(80);
 #define NUM_LEDS    1
 #define BRIGHTNESS  255
 CRGB leds[NUM_LEDS];
-const uint8_t switchGpio = D4;
+const uint8_t switchGpio = D6;
 bool settingMode = false;
 int lastGstate = 0;
 String lastColor;
@@ -31,6 +30,9 @@ const char *spassword = "gemini123";
 unsigned long lastMillis = 0;
 unsigned long lastFetch = 0;
 bool sled = false;
+String srkey ;
+String srscrt;
+String srID;
 String deviceID;
 bool pressed = false;
 void setup() {
@@ -52,11 +54,11 @@ void setup() {
  pinMode(D2, INPUT);
  pinMode(D7, INPUT);
  delay(2000);
- if(digitalRead(D1) == HIGH){
+ if(digitalRead(D7) == HIGH){
   cbtPressed = true;
   Serial.println("[SYSTEM] Setting button is pressed.");
   delay(2000);
-  if(digitalRead(D1) == HIGH){
+  if(digitalRead(D7) == HIGH){
   Serial.println("[SYSTEM] Entering setting mode...");
   settingMode = true;
   }else{
@@ -114,6 +116,12 @@ void setup() {
   settingMode = true;
     }
    fetchtokens();
+   delay(200);
+   SinricProSwitch& mySwitch = SinricPro[srID];   
+   mySwitch.onPowerState(onPowerState);                
+   SinricPro.begin(srkey, srscrt);  
+   SinricPro.onConnected([](){ Serial.println("[NETWORK] Connected to SinricPro"); }); 
+   SinricPro.onDisconnected([](){ Serial.println("[NETWORK] Disconnected from SinricPro"); });
    Serial.println("[SYSTEM] Boot success.");
     leds[0] = CRGB::Black;
     FastLED.show();
@@ -123,11 +131,11 @@ void setup() {
 void loop() {
  server.handleClient();
  if(settingMode == false){
+  SinricPro.handle();
   if(millis() - lastFetch >= 2000){
     lastFetch = millis();
   fetch();
   }
-  SinricPro.handle();
   readPIR();  
   physicalSwitchStatus();
  }else{
