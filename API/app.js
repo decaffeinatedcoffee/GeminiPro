@@ -216,7 +216,7 @@ app.post("/api/v1/logincheck", function(req,res){
      for(var i = 0; i < user.devices.sharingWith.length; i++){
       let shuser = await User.findOne({id:user.devices.sharingWith[i]});
       let shusername = CryptoJS.AES.decrypt(shuser.username, process.env.SALT).toString(CryptoJS.enc.Utf8);
-      sharingWith.push({username: shusername, email:shusername.email});
+      sharingWith.push({username: shusername, email:shuser.email});
      }
 
     let userdata = {username: username, email:user.email, devices:{myDevices, sharedDevices, sharingWith}, createdAt:user.createdAt};
