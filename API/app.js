@@ -58,6 +58,9 @@ const userSchema = mongoose.Schema({
        },
        sharedDevices:{
         type:Array
+       },
+       sharingWith:{
+        type:Array
        }
       }
     });
@@ -145,7 +148,7 @@ bcrypt.hash(pass, 10, function(err, hash) {
   return; 
   }else{
 username = CryptoJS.AES.encrypt(username, process.env.SALT).toString();
-var u = new User({username:username, email:email, password:hash, id: uuid.v4(), createdAt:new Date().getTime(), devices:{myDevices:[], sharedDevices:[]}});
+var u = new User({username:username, email:email, password:hash, id: uuid.v4(), createdAt:new Date().getTime(), devices:{myDevices:[], sharedDevices:[],sharingWith:[]}});
 u.save()
 res.send({"error":false, "message":"User was created successfully."});
   }
@@ -188,6 +191,7 @@ app.post("/api/v1/logincheck", function(req,res){
     let username = CryptoJS.AES.decrypt(user.username, process.env.SALT).toString(CryptoJS.enc.Utf8);
     let myDevices = [];
     let sharedDevices = [];
+    let sharingWith = [];
     if(!user.oneSignal.includes(oneSignal) && oneSignal != null){
       user.oneSignal.push(oneSignal);
       user.save();
@@ -209,8 +213,13 @@ app.post("/api/v1/logincheck", function(req,res){
       }
      }
 
+     for(var i = 0; i < user.devices.sharingWith.length; i++){
+      let shuser = await User.findOne({id:user.devices.sharingWith[i]});
+      let shusername = CryptoJS.AES.decrypt(shuser.username, process.env.SALT).toString(CryptoJS.enc.Utf8);
+      sharingWith.push({username: shusername, email:shusername.email});
+     }
 
-    let userdata = {username: username, email:user.email, devices:{myDevices, sharedDevices}, createdAt:user.createdAt};
+    let userdata = {username: username, email:user.email, devices:{myDevices, sharedDevices, sharingWith}, createdAt:user.createdAt};
 
 
     res.send({valid:true, userData:userdata});
@@ -609,7 +618,9 @@ app.post("/api/v1/changesharelist", function(req,res){
           sharinguser.devices.sharedDevices.push(user.devices.myDevices[i]);
           }
           }
+          user.devices.sharingWith.push(sharinguser.id);
           sharinguser.save();
+          user.save();
           for(var x = 0; x < sharinguser.oneSignal.length; x++){
           const notification = {
             contents: {
@@ -628,6 +639,11 @@ app.post("/api/v1/changesharelist", function(req,res){
             }
             }
             sharinguser.save();
+            var shls = user.devices.sharingWith.indexOf(sharinguser.id);
+            if (shls !== -1) {
+              user.devices.sharingWith.splice(shls, 1); 
+            }
+            user.save();
             for(var x = 0; x < sharinguser.oneSignal.length; x++){
               const notification = {
                 contents: {
