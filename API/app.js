@@ -737,6 +737,40 @@ app.post("/api/v1/accountremove", async function(req,res){
 })
 })
 
+
+app.post("/api/v1/passchange", async function(req,res){
+  let token = req.body.token;
+  let id = req.body.id;
+  let newpass = req.body.passchange;
+  User.findOne({id: id}).then(async function(user){
+   if(user){
+    if(user.loggedDevices.includes(token)){
+     if(newpass){
+       bcrypt.hash(newpass, 10, function(err, hash) {
+        if(err){
+        res.send({"error":true, "message":"Error while generating new password hash."});
+        return; 
+        }else{
+      user.password = hash;
+      user.save()
+      res.send({"error":false});
+        }
+      })
+     }else{
+      res.send({"error":true});
+      return; 
+     }
+    }else{
+      res.send({"error":true});
+      return; 
+      }
+  }else{
+    res.send({"error":true});
+    return; 
+    }
+})
+})
+
 app.listen(process.env.PORT || 3000 || 3001, () => {
     console.log("Listening Ports")
 })
