@@ -722,7 +722,7 @@ app.post("/api/v1/accountremove", async function(req,res){
    if(user){
     if(user.loggedDevices.includes(token)){
      for(var i = 0; i < user.devices.myDevices.length; i++){
-      await Device.deleteOne({id:user.devices.myDevices[i].id});
+      await Device.deleteOne({id:user.devices.myDevices[i]});
      }
      await User.deleteOne({id:id});
      res.send({"error":false});
