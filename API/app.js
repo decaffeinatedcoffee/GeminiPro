@@ -742,10 +742,13 @@ app.post("/api/v1/passchange", async function(req,res){
   let token = req.body.token;
   let id = req.body.id;
   let newpass = req.body.passchange;
+  let currentpass = req.body.currentpass;
   User.findOne({id: id}).then(async function(user){
    if(user){
     if(user.loggedDevices.includes(token)){
      if(newpass){
+      let verifyPass = bcrypt.compareSync(currentpass, user.password);  
+      if(verifyPass){
        bcrypt.hash(newpass, 10, function(err, hash) {
         if(err){
         res.send({"error":true, "message":"Error while generating new password hash."});
@@ -757,6 +760,10 @@ app.post("/api/v1/passchange", async function(req,res){
       res.send({"error":false});
         }
       })
+    }else{
+      res.send({"error":true});
+      return; 
+     }
      }else{
       res.send({"error":true});
       return; 
