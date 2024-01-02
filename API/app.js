@@ -765,15 +765,15 @@ app.post("/api/v1/passchange", async function(req,res){
       return; 
      }
      }else{
-      res.send({"error":true, "errorcause": "unknown"});
+      res.send({"error":true, "errorcause": "Missing Data"});
       return; 
      }
     }else{
-      res.send({"error":true, "errorcause": "unknown"});
+      res.send({"error":true, "errorcause": "Missing Tokens"});
       return; 
       }
   }else{
-    res.send({"error":true});
+    res.send({"error":true, "errorcause": "Invalid User"});
     return; 
     }
 })
