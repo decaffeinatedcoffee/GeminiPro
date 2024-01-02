@@ -685,7 +685,7 @@ app.post("/api/v1/changesharelist", function(req,res){
 
 
 
-app.post("/editaccount", function(req,res){
+app.post("/api/v1/editaccount", function(req,res){
  let email = req.body.email;
  let newusername = req.body.username;
  let token = req.body.token;
