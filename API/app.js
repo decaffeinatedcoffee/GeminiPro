@@ -715,6 +715,28 @@ app.post("/api/v1/editaccount", function(req,res){
 });
 
 
+app.post("/api/v1/accountremove", async function(req,res){
+  let token = req.body.token;
+  let id = req.body.id;
+  User.findOne({id: id}).then(async function(user){
+   if(user){
+    if(user.loggedDevices.includes(token)){
+     user.devices.myDevices.forEach(async device => {
+      await Device.deleteOne({id:device.id});
+    });
+     await User.deleteOne({id:id});
+     res.send({"error":false});
+    }else{
+      res.send({"error":true});
+      return; 
+      }
+  }else{
+    res.send({"error":true});
+    return; 
+    }
+})
+})
+
 app.listen(process.env.PORT || 3000 || 3001, () => {
     console.log("Listening Ports")
 })
