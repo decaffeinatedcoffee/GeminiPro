@@ -761,15 +761,15 @@ app.post("/api/v1/passchange", async function(req,res){
         }
       })
     }else{
-      res.send({"error":true});
+      res.send({"error":true, "errorcause": "wrps"});
       return; 
      }
      }else{
-      res.send({"error":true});
+      res.send({"error":true, "errorcause": "unknown"});
       return; 
      }
     }else{
-      res.send({"error":true});
+      res.send({"error":true, "errorcause": "unknown"});
       return; 
       }
   }else{
