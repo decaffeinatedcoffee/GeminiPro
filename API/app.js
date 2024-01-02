@@ -752,6 +752,7 @@ app.post("/api/v1/passchange", async function(req,res){
         return; 
         }else{
       user.password = hash;
+      user.loggedDevices = [];
       user.save()
       res.send({"error":false});
         }
