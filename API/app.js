@@ -689,6 +689,7 @@ app.post("/api/v1/editaccount", function(req,res){
  let email = req.body.email;
  let newusername = req.body.username;
  let token = req.body.token;
+ let id = req.body.id;
  User.findOne({id: id}).then(async function(user){
   if(user){
    if(user.loggedDevices.includes(token)){
