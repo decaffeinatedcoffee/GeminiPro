@@ -721,9 +721,9 @@ app.post("/api/v1/accountremove", async function(req,res){
   User.findOne({id: id}).then(async function(user){
    if(user){
     if(user.loggedDevices.includes(token)){
-     user.devices.myDevices.forEach(async device => {
-      await Device.deleteOne({id:device.id});
-    });
+     for(var i = 0; i < user.devices.myDevices.length; i++){
+      await Device.deleteOne({id:user.devices.myDevices[i].id});
+     }
      await User.deleteOne({id:id});
      res.send({"error":false});
     }else{
