@@ -1,3 +1,5 @@
+
+
 const server = require("express");
 const app = new server();
 require("dotenv").config();
@@ -219,7 +221,7 @@ app.post("/api/v1/logincheck", function(req,res){
       sharingWith.push({username: shusername, email:shuser.email});
      }
 
-    let userdata = {username: username, email:user.email, devices:{myDevices, sharedDevices, sharingWith}, createdAt:user.createdAt};
+    let userdata = {username: username, email:user.email,id:user.id, devices:{myDevices, sharedDevices, sharingWith}, createdAt:user.createdAt};
 
 
     res.send({valid:true, userData:userdata});
@@ -237,11 +239,20 @@ app.post("/api/v1/logincheck", function(req,res){
 
 app.get("/api/v1/checkmail", async function(req,res){
   let email = req.query.email;
+  let id = req.query.id;
   let emaulInUse = false;
   let eresults = await User.find({email:new RegExp(email, 'i')});
     for(var i = 0; i < eresults.length; i++){
       if(eresults[i].email.toLowerCase() == email.toLowerCase()){  
-       emaulInUse = true;
+        if(id){
+         if(eresults[i].id == id){
+          emaulInUse = false;
+         }else{
+          emaulInUse = true;
+         }
+        }else{
+          emaulInUse = true;
+        } 
       }
 }
   res.send(`{"mail":${emaulInUse}}`);
@@ -669,6 +680,36 @@ app.post("/api/v1/changesharelist", function(req,res){
     res.send({"error":true});
     return; 
     }
+})
+});
+
+
+
+app.post("/editaccount", function(req,res){
+ let email = req.body.email;
+ let newusername = req.body.username;
+ let token = req.body.token;
+ User.findOne({id: id}).then(async function(user){
+  if(user){
+   if(user.loggedDevices.includes(token)){
+    let username = CryptoJS.AES.decrypt(user.username, process.env.SALT).toString(CryptoJS.enc.Utf8);
+   if(user.email !== email){
+    user.email = email;
+   }
+   if(newusername !== username){
+    user.username =  CryptoJS.AES.encrypt(newusername, process.env.SALT).toString();
+   }
+   user.save();
+   res.send({"error":false});
+   return;
+  }else{
+    res.send({"error":true});
+    return; 
+    }
+}else{
+  res.send({"error":true});
+  return; 
+  }
 })
 });
 
