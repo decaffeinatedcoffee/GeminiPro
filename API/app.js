@@ -1,7 +1,9 @@
 
 
-const server = require("express");
-const app = new server();
+const express = require("express");
+const http = require("http");
+const app = new express();
+const server = http.createServer(app);
 require("dotenv").config();
 const bodyParser = require("body-parser");
 let path = require('path');
@@ -16,12 +18,13 @@ var cors = require('cors');
 const uuid = require('uuid');
 const { strict } = require("assert");
 const { timeStamp } = require("console");
+const io = require('socket.io')(server);
 app.use(cors({
   origin: '*',
 }))
-app.use('/assets', server.static(__dirname + '/assets'), serveIndex(__dirname + '/assets'));
+app.use('/assets', express.static(__dirname + '/assets'), serveIndex(__dirname + '/assets'));
 const client = new OneSignal.Client(process.env.OSID, process.env.OSKEY);
-
+app.set('io', io);
 db().catch(err => console.log(err));
 async function db() {
 await mongoose.connect(process.env.MONGODB);
@@ -128,7 +131,10 @@ const userSchema = mongoose.Schema({
         switchID: {
           type: String,
         }
-       }
+       },
+       socketID:{
+        type: String,
+      }
       });
     const User = mongoose.model("users", userSchema);
     const Device = mongoose.model("devices", devicesSchema);
@@ -311,6 +317,7 @@ app.post("/api/v1/changestate", function(req,res){
         device.status.ledColors.current = device.status.ledColors.on;
       }
       device.save();
+      io.to(device.socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
       });
       res.send({error:false});
       }
@@ -779,7 +786,7 @@ app.post("/api/v1/passchange", async function(req,res){
 })
 })
 
-app.listen(process.env.PORT || 3000 || 3001, () => {
+server.listen(process.env.PORT || 3000 || 3001, () => {
     console.log("Listening Ports")
 })
 
@@ -803,4 +810,43 @@ function convertTimestamp(time, timezone){
     }
 }
 
+io.on('connection', client => {
+  client.on("register", function(data){
+  if(data){
+    if(data.id){
+      console.log(`Device ${data.id} was registered to socket!`)
+      Device.findOne({id:data.id}).then(function(device){
+      device.socketID = client.id;
+      device.save();
+      })
+    }
+  }
+  });
+  client.on('changedevicestate',function(data){
+    if(data){
+      if(data.id){
+        Device.findOne({id:data.id}).then(function(device){
+          if(device){
+        if(device.status.gpioStatus == 1){
+          device.status.gpioStatus = 0;
+          device.status.ledColors.current = device.status.ledColors.off;
+          device.status.lightAlarmTime = null;
+        }else{
+          device.status.gpioStatus = 1
+          device.status.ledColors.current = device.status.ledColors.on;
+        }
+     if(device.lastAction < new Date(new Date().getTime() - (15 * 1000)).getTime()){
+       device.lastAction = new Date().getTime();
+       device.connectionStatus = "Online";
+       device.save();
+     }
+       client.emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
+      }
+        });
+      }
+    }
+  });
 
+
+
+});
