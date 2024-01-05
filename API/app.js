@@ -787,7 +787,8 @@ app.post("/api/v1/passchange", async function(req,res){
 })
 
 server.listen(process.env.PORT || 3000 || 3001, () => {
-    console.log("Listening Ports")
+    console.log("Listening Ports");
+    keepalive();
 })
 
 
@@ -850,3 +851,8 @@ io.on('connection', client => {
 
 
 });
+
+function keepalive(){
+  fetch("https://geminipro-up03.onrender.com");
+    setTimeout(keepalive,840000);
+  }
