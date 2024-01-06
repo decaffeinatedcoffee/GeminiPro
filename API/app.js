@@ -840,8 +840,8 @@ io.on('connection', client => {
      if(device.lastAction < new Date(new Date().getTime() - (15 * 1000)).getTime()){
        device.lastAction = new Date().getTime();
        device.connectionStatus = "Online";
-       device.save();
      }
+     device.save();
       }
         });
       }
