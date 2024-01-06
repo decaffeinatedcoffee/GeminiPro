@@ -463,11 +463,24 @@ app.post("/api/v1/removedevice", function(req,res){
 app.get("/api/v1/ifttt", async function(req,res){
   let deviceID = req.query.id;
   let iftttToken = req.query.token;
+  let newState = req.query.state;
  if(deviceID && iftttToken){
   let device = await Device.findOne({id:deviceID});
   if(device){
    if(device.iftttToken){
     if(iftttToken == device.iftttToken){
+      if(newState){
+      if(newState == 0){
+        device.status.gpioStatus = 0;
+        device.status.ledColors.current = device.status.ledColors.off;
+        device.status.lightAlarmTime = null;
+      }else if(newState == 1){
+        device.status.gpioStatus = 1
+        device.status.ledColors.current = device.status.ledColors.on;
+      }
+      res.status(200);
+      res.send({"error":false, "status":`Device ${device.id} GPIO status was setted to requested state ${device.status.gpioStatus}`}); 
+      }else{
       if(device.status.gpioStatus == 1){
         device.status.gpioStatus = 0;
         device.status.ledColors.current = device.status.ledColors.off;
@@ -476,10 +489,11 @@ app.get("/api/v1/ifttt", async function(req,res){
         device.status.gpioStatus = 1
         device.status.ledColors.current = device.status.ledColors.on;
       }
-      io.to(device.socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
-      device.save();
       res.status(200);
       res.send({"error":false, "status":`Device ${device.id} GPIO status was setted to ${device.status.gpioStatus}`}); 
+    }
+       io.to(device.socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
+      device.save();
     }else{
       res.status(401);
       res.send({"error":true, "status":"Wrong Credentials"}); 
