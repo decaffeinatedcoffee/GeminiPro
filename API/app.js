@@ -467,8 +467,7 @@ app.get("/api/v1/ifttt", async function(req,res){
   let device = await Device.findOne({id:deviceID});
   if(device){
    if(device.iftttToken){
-    let verifytoken = bcrypt.compareSync(iftttToken, device.iftttToken);
-    if(verifytoken){
+    if(iftttToken == device.iftttToken){
       if(device.status.gpioStatus == 1){
         device.status.gpioStatus = 0;
         device.status.ledColors.current = device.status.ledColors.off;
