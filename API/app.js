@@ -121,19 +121,11 @@ const userSchema = mongoose.Schema({
           type: String,
           required:true,
         },
-       sincricPro:{
-        appKey:{
-          type: String,
-        }, 
-        appSecret:{
-          type: String,
-        },
-        switchID: {
-          type: String,
-        }
-       },
        socketID:{
         type: String,
+      },
+      iftttToken:{
+        type:String,
       }
       });
     const User = mongoose.model("users", userSchema);
@@ -207,9 +199,6 @@ app.post("/api/v1/logincheck", function(req,res){
     for(var i = 0; i < user.devices.myDevices.length; i++){
       let device = await Device.findOne({id:user.devices.myDevices[i]});
      if(device){
-      device.sincricPro.appKey = CryptoJS.AES.decrypt(device.sincricPro.appKey, process.env.SALT).toString(CryptoJS.enc.Utf8);
-      device.sincricPro.appSecret = CryptoJS.AES.decrypt(device.sincricPro.appSecret, process.env.SALT).toString(CryptoJS.enc.Utf8);
-      device.sincricPro.switchID = CryptoJS.AES.decrypt(device.sincricPro.switchID, process.env.SALT).toString(CryptoJS.enc.Utf8);
       myDevices.push(device);
      }
     }
@@ -279,7 +268,7 @@ app.post("/api/v1/newdevice", function(req,res){
       if(user){
       
        if(user.loggedDevices.includes(token)){
-        var device = new Device({id:deviceID, name:deviceName, connectionStatus:"Online", status:{gpioStatus:0, lightAlarm:0, lightAlarmTime: null, ledColors:{current:"0xFF0000",on:"0x0000FF",off:"0xFF0000"}, timer:{timezone: 0, on:null, off:null}}, lastAction:new Date().getTime(), sincricPro:{appKey:null, appSecret:null, switchID: null}});
+        var device = new Device({id:deviceID, name:deviceName, connectionStatus:"Online", status:{gpioStatus:0, lightAlarm:0, lightAlarmTime: null, ledColors:{current:"0xFF0000",on:"0x0000FF",off:"0xFF0000"}, timer:{timezone: 0, on:null, off:null}}, lastAction:new Date().getTime()});
         device.save()
         user.devices.myDevices.push(deviceID);
         user.save();
@@ -380,9 +369,6 @@ app.post("/api/v1/changedevicesettings", function(req,res){
   let timezone = req.body.timezone;
   let colorOn = req.body.colorOn;
   let colorOff = req.body.colorOff;
-  let GAkey = req.body.GAkey;
-  let GAID =  req.body.GAID;
-  let GAtoken = req.body.GAtoken;
   let lightAlarm = req.body.lightAlarm;
   let id = req.body.id;
   let token = req.body.token;
@@ -416,13 +402,6 @@ app.post("/api/v1/changedevicesettings", function(req,res){
            device.status.ledColors.current = device.status.ledColors.off
           }else{
             device.status.ledColors.current = device.status.ledColors.on
-          }
-          if(GAkey && GAID && GAtoken){
-           device.sincricPro.switchID =  CryptoJS.AES.encrypt(GAID, process.env.SALT).toString();
-           device.sincricPro.appSecret = CryptoJS.AES.encrypt(GAtoken, process.env.SALT).toString();
-           device.sincricPro.appKey =  CryptoJS.AES.encrypt(GAkey, process.env.SALT).toString();
-          }else{
-            GAkey, GAID, GAtoken = null;
           }
           device.save();
           res.send({error:false});
@@ -478,6 +457,46 @@ app.post("/api/v1/removedevice", function(req,res){
     return; 
     }
 })
+});
+
+
+app.get("/api/v1/ifttt", async function(req,res){
+  let deviceID = req.query.id;
+  let iftttToken = req.query.token;
+ if(deviceID && iftttToken){
+  let device = await Device.findOne({id:deviceID});
+  if(device){
+   if(device.iftttToken){
+    let verifytoken = bcrypt.compareSync(iftttToken, device.iftttToken);
+    if(verifytoken){
+      if(device.status.gpioStatus == 1){
+        device.status.gpioStatus = 0;
+        device.status.ledColors.current = device.status.ledColors.off;
+        device.status.lightAlarmTime = null;
+      }else{
+        device.status.gpioStatus = 1
+        device.status.ledColors.current = device.status.ledColors.on;
+      }
+      io.to(device.socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
+      device.save();
+      res.status(200);
+      res.send({"error":false, "status":`Device ${device.id} GPIO status was setted to ${device.status.gpioStatus}`}); 
+    }else{
+      res.status(401);
+      res.send({"error":true, "status":"Wrong Credentials"}); 
+    }
+   }else{
+    res.status(401);
+    res.send({"error":true, "status":"Not Authorized"});
+   }
+  }else{
+   res.status(404);
+   res.send({"error":true, "status":"Cannot find this device"});
+  }
+}else{
+  res.status(400);
+  res.send({"error":true, "status":"Bad request"});
+ }
 });
 
 
