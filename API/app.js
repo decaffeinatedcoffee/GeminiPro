@@ -23,7 +23,7 @@ app.use(cors({
   origin: '*',
 }))
 app.use('/assets', express.static(__dirname + '/assets'), serveIndex(__dirname + '/assets'));
-const client = new OneSignal.Client(process.env.OSID, process.env.OSKEY);
+const notificationclient = new OneSignal.Client(process.env.OSID, process.env.OSKEY);
 app.set('io', io);
 db().catch(err => console.log(err));
 async function db() {
@@ -573,7 +573,7 @@ app.post("/api/v1/changesharelist", function(req,res){
       if(suser != user.email){
       let sharinguser = await User.findOne({email:suser});
 
-      if(sharinguser){
+      if(sharinguser){notificationclient
         let ownername = CryptoJS.AES.decrypt(user.username, process.env.SALT).toString(CryptoJS.enc.Utf8);
         if(action == "add"){
           for(var i = 0; i < user.devices.myDevices.length; i++){
@@ -591,7 +591,7 @@ app.post("/api/v1/changesharelist", function(req,res){
             },
            include_player_ids: [sharinguser.oneSignal[x]],
           };
-          client.createNotification(notification);
+          notificationclient.createNotification(notification);
         }
           res.send({"error":false});
         }else if(action == "remove"){
@@ -614,7 +614,7 @@ app.post("/api/v1/changesharelist", function(req,res){
                 },
                include_player_ids: [sharinguser.oneSignal[x]],
               };
-              client.createNotification(notification);
+              notificationclient.createNotification(notification);
             }
             res.send({"error":false});
         }
@@ -791,7 +791,7 @@ io.on('connection', client => {
           },
          include_player_ids: [owner[i].oneSignal[x]],
         };
-        client.createNotification(notification);
+        notificationclient.createNotification(notification);
     }
     }
     }
@@ -804,7 +804,7 @@ io.on('connection', client => {
             },
            include_player_ids: [shared[i].oneSignal[x]],
           };
-          client.createNotification(notification);
+        notificationclient.createNotification(notification);
       }
       }
      }
