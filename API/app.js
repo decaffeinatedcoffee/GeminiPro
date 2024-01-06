@@ -331,43 +331,6 @@ app.post("/api/v1/changestate", function(req,res){
    })
 });
 
-app.get("/api/v1/device/changestate", function(req,res){
-  let deviceID = req.query.id;
-      Device.findOne({id:deviceID}).then(function(device){
-        if(device){
-      if(device.status.gpioStatus == 1){
-        device.status.gpioStatus = 0;
-        device.status.ledColors.current = device.status.ledColors.off;
-        device.status.lightAlarmTime = null;
-      }else{
-        device.status.gpioStatus = 1
-        device.status.ledColors.current = device.status.ledColors.on;
-      }
-      device.save();
-      res.send({error:false});
-    }else{
-      res.send({error:true});
-    }
-      });
-});
-
-app.get("/api/v1/device",function(req,res){
-let deviceID = req.query.id;
-if(deviceID){
- Device.findOne({id:deviceID}).then(function(device){
-  if(device){
-  if(device.lastAction < new Date(new Date().getTime() - (15 * 1000)).getTime()){
-    device.lastAction = new Date().getTime();
-    device.connectionStatus = "Online";
-    device.save();
-  }
-  res.send({error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
-  }
- });
-}else{
-  res.send({error:true, gpioStatus:undefined});
-}
-});
 
 checkDevicesStatus();
 
@@ -488,46 +451,6 @@ app.post("/api/v1/changedevicesettings", function(req,res){
 return;
 }
   });
-});
-
-
-app.post("/api/v1/device/motion", async function(req,res){
-let deviceID = req.query.deviceid;
-let owner = await  User.find({"devices.myDevices":deviceID});
-let shared = await  User.find({"devices.sharedDevices":deviceID});
-let device = await Device.findOne({id:deviceID});
-if(device.status.lightAlarm == 1){
-  device.status.gpioStatus = 1;
-  device.status.ledColors.current = device.status.ledColors.on;
-  device.status.lightAlarmTime = new Date().getTime();
-  device.save();
-for(var i = 0; i < owner.length; i++){
-if(owner[i].oneSignal){
-  for(var x = 0; x < owner[i].oneSignal.length; x++){
-    const notification = {
-      contents: {
-        'en': `Motion detected, the lights were turned on`,
-      },
-     include_player_ids: [owner[i].oneSignal[x]],
-    };
-    client.createNotification(notification);
-}
-}
-}
-for(var i = 0; i < shared.length; i++){
-  if(shared[i].oneSignal){
-    for(var x = 0; x < shared[i].oneSignal.length; x++){
-      const notification = {
-        contents: {
-          'en': `Motion detected, the lights were turned on`,
-        },
-       include_player_ids: [shared[i].oneSignal[x]],
-      };
-      client.createNotification(notification);
-  }
-  }
-}
-}
 });
 
 
@@ -812,17 +735,67 @@ function convertTimestamp(time, timezone){
 }
 
 io.on('connection', client => {
+  client.on("disconnect", async function(){
+    let device = await  Device.find({"socketID":client.id});
+    if(device){
+      device.connectionStatus = "Offline";
+      device.save();
+    }
+  });
   client.on("register", function(data){
   if(data){
     if(data.id){
       console.log(`Device ${data.id} was registered to socket!`)
       Device.findOne({id:data.id}).then(function(device){
       device.socketID = client.id;
+      device.connectionStatus = "Online";
       device.save();
       })
     }
   }
   });
+  client.on('motion', async function(data){
+    if(data){
+    let deviceID = data.id;
+    let owner = await  User.find({"devices.myDevices":deviceID});
+    let shared = await  User.find({"devices.sharedDevices":deviceID});
+    let device = await Device.findOne({id:deviceID});
+    if(device.status.lightAlarm == 1){
+      device.status.gpioStatus = 1;
+      device.status.ledColors.current = device.status.ledColors.on;
+      device.status.lightAlarmTime = new Date().getTime();
+      device.save();
+    for(var i = 0; i < owner.length; i++){
+    if(owner[i].oneSignal){
+      for(var x = 0; x < owner[i].oneSignal.length; x++){
+        const notification = {
+          contents: {
+            'en': `Motion detected, the lights were turned on`,
+          },
+         include_player_ids: [owner[i].oneSignal[x]],
+        };
+        client.createNotification(notification);
+    }
+    }
+    }
+    for(var i = 0; i < shared.length; i++){
+      if(shared[i].oneSignal){
+        for(var x = 0; x < shared[i].oneSignal.length; x++){
+          const notification = {
+            contents: {
+              'en': `Motion detected, the lights were turned on`,
+            },
+           include_player_ids: [shared[i].oneSignal[x]],
+          };
+          client.createNotification(notification);
+      }
+      }
+     }
+     }
+    }
+  });
+
+
   client.on('changedevicestate',function(data){
     if(data){
       if(data.id){
@@ -837,10 +810,6 @@ io.on('connection', client => {
           device.status.ledColors.current = device.status.ledColors.on;
         }
         io.to(client.id).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
-     if(device.lastAction < new Date(new Date().getTime() - (15 * 1000)).getTime()){
-       device.lastAction = new Date().getTime();
-       device.connectionStatus = "Online";
-     }
      device.save();
       }
         });
