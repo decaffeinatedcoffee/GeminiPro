@@ -824,7 +824,6 @@ io.on('connection', client => {
   }
   });
   client.on('changedevicestate',function(data){
-    console.log("device trigger received");
     if(data){
       if(data.id){
         Device.findOne({id:data.id}).then(function(device){
@@ -837,14 +836,13 @@ io.on('connection', client => {
           device.status.gpioStatus = 1
           device.status.ledColors.current = device.status.ledColors.on;
         }
+        io.to(client.id).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
      if(device.lastAction < new Date(new Date().getTime() - (15 * 1000)).getTime()){
        device.lastAction = new Date().getTime();
        device.connectionStatus = "Online";
        device.save();
      }
-       client.emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
-        console.log("device trigger sent");
-          }
+      }
         });
       }
     }
