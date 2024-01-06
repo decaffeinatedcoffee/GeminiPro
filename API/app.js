@@ -665,7 +665,7 @@ app.post("/api/v1/accountremove", async function(req,res){
     return; 
     }
 })
-})
+});
 
 
 app.post("/api/v1/passchange", async function(req,res){
@@ -707,12 +707,12 @@ app.post("/api/v1/passchange", async function(req,res){
     return; 
     }
 })
-})
+});
 
 server.listen(process.env.PORT || 3000 || 3001, () => {
     console.log("Listening Ports");
     keepalive();
-})
+});
 
 
 function convertTimestamp(time, timezone){
@@ -735,13 +735,7 @@ function convertTimestamp(time, timezone){
 }
 
 io.on('connection', client => {
-  client.on("disconnect", async function(){
-    let device = await  Device.find({"socketID":client.id});
-    if(device){
-      device.connectionStatus = "Offline";
-      device.save();
-    }
-  });
+  console.log(`Device ${client.id} was connected to socket!`)
   client.on("register", function(data){
   if(data){
     if(data.id){
@@ -815,10 +809,17 @@ io.on('connection', client => {
         });
       }
     }
-  });
+   });
 
 
-
+    client.on("disconnect", async function(){
+      let device = await Device.find({"socketID":client.id});
+      if(device){
+        device.connectionStatus = "Offline";
+        device.save();
+      }
+    });
+ 
 });
 
 function keepalive(){
