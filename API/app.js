@@ -345,7 +345,7 @@ async function checkTimers(){
     dvON[i].status.gpioStatus = 1;
     dvON[i].status.ledColors.current = dvON[i].status.ledColors.on;
     dvON[i].save();
-    io.to(dvON[i].socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
+    io.to(dvON[i].socketID).emit("state", {error:false, gpioStatus:dvON[i].status.gpioStatus, ledColor:dvON[i].status.ledColors.current, lightAlarm: dvON[i].status.lightAlarm});
   }
   }
   
@@ -356,7 +356,7 @@ async function checkTimers(){
       dvOFF[i].status.gpioStatus = 0;
       dvOFF[i].status.ledColors.current = dvOFF[i].status.ledColors.off;
       dvOFF[i].save();
-      io.to(dvOFF[i].socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
+      io.to(dvOFF[i].socketID).emit("state", {error:false, gpioStatus:dvOFF[i].status.gpioStatus, ledColor:dvOFF[i].status.ledColors.current, lightAlarm: dvOFF[i].status.lightAlarm});
  
  }
  }
@@ -367,7 +367,7 @@ async function checkTimers(){
     dvAL[i].status.gpioStatus = 0;
     dvAL[i].status.ledColors.current = dvAL[i].status.ledColors.off;
     dvAL[i].save();
-    io.to(dvAL[i].socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
+    io.to(dvAL[i].socketID).emit("state", {error:false, gpioStatus:dvAL[i].status.gpioStatus, ledColor:dvAL[i].status.ledColors.current, lightAlarm: dvAL[i].status.lightAlarm});
   }
 }
  setTimeout(checkTimers, 3000);
