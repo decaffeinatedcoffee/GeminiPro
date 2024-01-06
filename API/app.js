@@ -824,6 +824,7 @@ io.on('connection', client => {
   }
   });
   client.on('changedevicestate',function(data){
+    console.log("device trigger received");
     if(data){
       if(data.id){
         Device.findOne({id:data.id}).then(function(device){
@@ -842,7 +843,8 @@ io.on('connection', client => {
        device.save();
      }
        client.emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
-      }
+        console.log("device trigger sent");
+          }
         });
       }
     }
