@@ -500,7 +500,7 @@ app.get("/api/v1/ifttt", async function(req,res){
 });
 
 
-app.get("/api/v1/createtoken", async function(req,res){
+app.post("/api/v1/createtoken", async function(req,res){
   let id = req.body.id;
   let token = req.body.token;
   let deviceID = req.body.deviceID;
