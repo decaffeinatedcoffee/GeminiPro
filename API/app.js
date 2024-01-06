@@ -332,21 +332,6 @@ app.post("/api/v1/changestate", function(req,res){
 });
 
 
-checkDevicesStatus();
-
-async function checkDevicesStatus(){
-  let dv = await Device.find({"lastAction":{$lt:new Date(new Date().getTime() - (30 * 1000)).getTime()}});
-  for(var i = 0; i < dv.length; i++){
-   if(dv[i]){
-    dv[i].connectionStatus = "Offline";
-    dv[i].save();
-   }
-  }
-  setTimeout(checkDevicesStatus, 10000);
-}
-
-
-
 checkTimers();
 
 
@@ -360,6 +345,7 @@ async function checkTimers(){
     dvON[i].status.gpioStatus = 1;
     dvON[i].status.ledColors.current = dvON[i].status.ledColors.on;
     dvON[i].save();
+    io.to(dvON[i].socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
   }
   }
   
@@ -370,6 +356,8 @@ async function checkTimers(){
       dvOFF[i].status.gpioStatus = 0;
       dvOFF[i].status.ledColors.current = dvOFF[i].status.ledColors.off;
       dvOFF[i].save();
+      io.to(dvOFF[i].socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
+ 
  }
  }
 
@@ -379,6 +367,7 @@ async function checkTimers(){
     dvAL[i].status.gpioStatus = 0;
     dvAL[i].status.ledColors.current = dvAL[i].status.ledColors.off;
     dvAL[i].save();
+    io.to(dvAL[i].socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
   }
 }
  setTimeout(checkTimers, 3000);
@@ -452,28 +441,6 @@ return;
 }
   });
 });
-
-
-
-app.get("/api/v1/device/sinric/boot/getinfo", async function(req,res){
-  let deviceID = req.query.id;
-  let device = await Device.findOne({id:deviceID});
-  if(device){
-    if(device.sincricPro.appKey != null && device.sincricPro.appSecret != null && device.sincricPro.switchID != null){
-    let sinricKey = CryptoJS.AES.decrypt(device.sincricPro.appKey, process.env.SALT).toString(CryptoJS.enc.Utf8);
-    let sinricSecret = CryptoJS.AES.decrypt(device.sincricPro.appSecret, process.env.SALT).toString(CryptoJS.enc.Utf8);
-    let sinricID = CryptoJS.AES.decrypt(device.sincricPro.switchID, process.env.SALT).toString(CryptoJS.enc.Utf8);
-     res.send({"error":false, sinricKey:sinricKey, sinricSecret:sinricSecret, sinricID:sinricID});
-     return;
-    }else{
-      res.send({"error":true});
-      return;
-    }
-  }else{
-  res.send({"error":true});
-  return; 
-  }
-})
 
 
 app.post("/api/v1/removedevice", function(req,res){
@@ -759,6 +726,7 @@ io.on('connection', client => {
       device.status.ledColors.current = device.status.ledColors.on;
       device.status.lightAlarmTime = new Date().getTime();
       device.save();
+      io.to(device.socketID).emit("state", {error:false, gpioStatus:device.status.gpioStatus, ledColor:device.status.ledColors.current, lightAlarm: device.status.lightAlarm});
     for(var i = 0; i < owner.length; i++){
     if(owner[i].oneSignal){
       for(var x = 0; x < owner[i].oneSignal.length; x++){
