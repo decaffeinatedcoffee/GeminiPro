@@ -500,6 +500,43 @@ app.get("/api/v1/ifttt", async function(req,res){
 });
 
 
+app.get("/api/v1/createtoken", async function(req,res){
+  let id = req.body.id;
+  let token = req.body.token;
+  let deviceID = req.body.deviceID;
+  User.findOne({id: id}).then(async function(user){
+    if(user){
+     if(user.loggedDevices.includes(token)){
+     let device = await Device.findOne({id:deviceID});
+     if(device){
+      let newtoken = uuid.v4();
+      bcrypt.hash(newtoken, 10, function(err, hash) {
+        if(err){
+        res.send({"error":true, "message":"Error while generating IFTTT token hash."});
+        return; 
+        }else{
+        device.iftttToken = hash;
+        device.save();
+        res.status(200);
+        res.send({"error":false, "payload":`https://geminipro-up03.onrender.com/api/v1/ifttt?id=${deviceID}&token=${device.iftttToken}`}); 
+        }
+      });
+     }else{
+   res.status(404);
+   res.send({"error":true, "status":"Cannot find this device"});
+  }
+     }else{
+      res.status(401);
+      res.send({"error":true, "status":"Wrong Credentials"}); 
+    }
+    }else{
+      res.status(400);
+      res.send({"error":true, "status":"Bad request"});
+     }
+  });
+});
+
+
 
 
 app.post("/api/v1/logout", function(req,res){
