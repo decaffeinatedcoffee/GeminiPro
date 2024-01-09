@@ -4,11 +4,13 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecure.h> 
 #include <FastLED.h>
-#include "SinricPro.h"
-#include "SinricProSwitch.h"
 #include <Arduino.h>
 #include <EEPROM.h>
-
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include <WebSocketsClient.h>
+#include <SocketIOclient.h>
+#include <Hash.h>
 HTTPClient http;
 IPAddress    apIP(10, 10, 10, 10); 
 ESP8266WebServer server(80);
@@ -30,11 +32,10 @@ const char *spassword = "gemini123";
 unsigned long lastMillis = 0;
 unsigned long lastFetch = 0;
 bool sled = false;
-String srkey ;
-String srscrt;
-String srID;
 String deviceID;
 bool pressed = false;
+SocketIOclient socketIO;
+bool registered = false;
 void setup() {
  Serial.begin(115200);
  Serial.println("[SYSTEM] System loading.");
@@ -92,6 +93,8 @@ void setup() {
     leds[0] = CRGB::Orange;
     FastLED.show();
    WiFi.hostname("GeminiPro");
+   WiFi.setSleepMode(WIFI_NONE_SLEEP); 
+    WiFi.setAutoReconnect(true);
    WiFi.mode(WIFI_STA);
   WiFi.begin(ssideeprom.c_str(), passeeprom.c_str());
   while (WiFi.status() != WL_CONNECTED && connectionattempts < 14) {
@@ -114,30 +117,27 @@ void setup() {
   leds[0] = CRGB::Purple;
   FastLED.show();
   settingMode = true;
-    }
-   fetchtokens();
-   delay(200);
-   SinricProSwitch& mySwitch = SinricPro[srID];   
-   mySwitch.onPowerState(onPowerState);                
-   SinricPro.begin(srkey, srscrt);  
-   SinricPro.onConnected([](){ Serial.println("[NETWORK] Connected to SinricPro"); }); 
-   SinricPro.onDisconnected([](){ Serial.println("[NETWORK] Disconnected from SinricPro"); });
+    }              
    Serial.println("[SYSTEM] Boot success.");
-    leds[0] = CRGB::Black;
-    FastLED.show();
+   socketIO.beginSSL("geminipro-up03.onrender.com", 443, "/socket.io/socket.io/?EIO=4");
+	 socketIO.onEvent(socketIOEvent);
+	 socketIO.setReconnectInterval(2000);
+   leds[0] = CRGB::Black;
+   FastLED.show();
+   otasetup();
  }
 }
 
 void loop() {
  server.handleClient();
  if(settingMode == false){
-  SinricPro.handle();
-  if(millis() - lastFetch >= 2000){
-    lastFetch = millis();
-  fetch();
-  }
-  readPIR();  
+  ArduinoOTA.handle();
+  socketIO.loop();
+  checkRegister();
   physicalSwitchStatus();
+  if(socketIO.isConnected()){
+  readPIR();
+}
  }else{
   if(millis() - lastMillis >= 800){
    lastMillis = millis();
