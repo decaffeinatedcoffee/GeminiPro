@@ -14,9 +14,17 @@
    Serial.println("[SYSTEM] Changed device state locally due fail to connect to WebSocket");
    if(digitalRead(switchGpio) == HIGH){
     digitalWrite(switchGpio, LOW);
+    leds[0] = CRGB::Black;
+    FastLED.show();
+    leds[0] = CRGB::Red;
+     FastLED.show();
     delay(1000);
    }else{
     digitalWrite(switchGpio, HIGH);
+    leds[0] = CRGB::Black;
+    FastLED.show();
+    leds[0] = CRGB::Green;
+    FastLED.show();
     delay(1000);
    }
   }
