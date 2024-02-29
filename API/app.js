@@ -850,7 +850,7 @@ io.on('connection', client => {
 
 
     client.on("disconnect", async function(){
-      let device = await Device.find({"socketID":client.id});
+      let device = await Device.findOne({"socketID":client.id});
       if(device){
         device.connectionStatus = "Offline";
         device.save();
