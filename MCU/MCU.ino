@@ -31,6 +31,8 @@ const char *sssid = "GeminiPro";
 const char *spassword = "gemini123";
 unsigned long lastMillis = 0;
 unsigned long lastFetch = 0;
+unsigned long settingModeTimeout = 0;
+String logs = "";
 bool sled = false;
 String deviceID;
 bool pressed = false;
@@ -39,6 +41,7 @@ bool registered = false;
 void setup() {
  Serial.begin(115200);
  Serial.println("[SYSTEM] System loading.");
+ Logprint("[SYSTEM] System loading.");
  EEPROM.begin(512);
  String ssideeprom;
  for (int i = 0; i < 30; ++i)
@@ -58,12 +61,16 @@ void setup() {
  if(digitalRead(D7) == HIGH){
   cbtPressed = true;
   Serial.println("[SYSTEM] Setting button is pressed.");
+  Logprint("[SYSTEM] Setting button is pressed.");
   delay(2000);
   if(digitalRead(D7) == HIGH){
   Serial.println("[SYSTEM] Entering setting mode...");
+  Logprint("[SYSTEM] Entering setting mode...");
   settingMode = true;
+  settingModeTimeout = millis();
   }else{
   Serial.println("[SYSTEM] Setting button was released, ignoring action.");
+  Logprint("[SYSTEM] Setting button was released, ignoring action.");
   settingMode = false;
   }
  }
@@ -72,6 +79,7 @@ void setup() {
  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
   Serial.println("[SYSTEM] System started.");
+  Logprint("[SYSTEM] System started.");
  if(settingMode == true){
   leds[0] = CRGB::Black;
   FastLED.show();
@@ -82,12 +90,17 @@ void setup() {
   server.on("/devicestatus", handleStatus);
   server.on("/set", handleset);
   server.on("/reboot", reboot);
+  server.on("/logs", loadlogs);
   server.begin();
   Serial.println("[SYSTEM] Setting mode enabled.");
+  Logprint("[SYSTEM] Setting mode enabled.");
   leds[0] = CRGB::Purple;
   FastLED.show();
  }else{
    Serial.println("[SYSTEM] Normal boot started.");
+   Logprint("[SYSTEM] Normal boot started."); 
+   logNetworks();
+   delay(70);
     leds[0] = CRGB::Black;
     FastLED.show();
     leds[0] = CRGB::Orange;
@@ -97,12 +110,13 @@ void setup() {
     WiFi.setAutoReconnect(true);
    WiFi.mode(WIFI_STA);
   WiFi.begin(ssideeprom.c_str(), passeeprom.c_str());
-  while (WiFi.status() != WL_CONNECTED && connectionattempts < 14) {
+  while (WiFi.status() != WL_CONNECTED && connectionattempts < 20) {
     delay(1000);
     connectionattempts ++;
-    Serial.println("[NETWORK] Trying to connect to WiFi, attempt " + String(connectionattempts) + "/14");
+    Serial.println("[NETWORK] Trying to connect to WiFi, attempt " + String(connectionattempts) + "/20");
+    Logprint("[NETWORK] Trying to connect to WiFi, attempt " + String(connectionattempts) + "/20");
   }
-  if(connectionattempts == 14 && deviceID){
+  if(connectionattempts == 20 && deviceID){
     leds[0] = CRGB::Black;
   FastLED.show();
   WiFi.mode(WIFI_AP_STA);
@@ -112,19 +126,26 @@ void setup() {
   server.on("/devicestatus", handleStatus);
   server.on("/wifidata", handlewifi);
   server.on("/reboot", reboot);
+  server.on("/logs", loadlogs);
   server.begin();
   Serial.println("[SYSTEM] Network setting mode enabled.");
+  Logprint("[SYSTEM] Network setting mode enabled.");
   leds[0] = CRGB::Purple;
   FastLED.show();
   settingMode = true;
-    }              
+  settingModeTimeout = millis();
+    }          
+   server.on("/logs", loadlogs);
+   server.begin();    
    Serial.println("[SYSTEM] Boot success.");
-   socketIO.beginSSL("geminipro-up03.onrender.com", 443, "/socket.io/socket.io/?EIO=4");
+   Logprint("[SYSTEM] Boot success.");
+   socketIO.beginSSL("geminipro.decaffeinatedcoffee.top", 443, "/socket.io/socket.io/?EIO=4");
 	 socketIO.onEvent(socketIOEvent);
 	 socketIO.setReconnectInterval(2000);
    leds[0] = CRGB::Black;
    FastLED.show();
    otasetup();
+   
  }
 }
 
@@ -150,6 +171,13 @@ void loop() {
     FastLED.show();
     sled = true;
    }
+  }
+
+  if(millis() - settingModeTimeout >= 240000){
+   Serial.println("[SYSTEM] Exiting setting mode and rebooting due to timeout");
+   Logprint("[SYSTEM] Exiting setting mode and rebooting due to timeout");
+   delay(70);
+   reboot();
   }
  }
 }
